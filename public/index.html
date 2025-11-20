@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Cloud Question (1–6)</title>
+  <meta name="description" content="Scan QR to show a server-generated cloud-computing question (1–6)">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
+  <style>
+    :root{--bg:#071022;--card:#0f1724;--accent:#ffd166;--muted:#9aa7b2}
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial}
+    body{display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#071027 0%, #0b1220 100%);color:white;padding:18px}
+    .card{width:100%;max-width:900px;margin:12px;padding:28px;border-radius:14px;background:rgba(255,255,255,0.03);backdrop-filter:blur(6px);box-shadow:0 6px 30px rgba(2,6,23,0.6);text-align:left}
+    .header{display:flex;align-items:center;justify-content:space-between}
+    .title{font-size:18px;color:var(--muted);margin-bottom:6px}
+    .question{font-size:20px;line-height:1.4;color:#fff;margin:18px 0;font-weight:600}
+    .meta{color:var(--muted);font-size:14px}
+    .status{color:var(--muted);font-size:13px;margin-top:8px}
+    @media(max-width:420px){.question{font-size:18px}}
+  </style>
+</head>
+
+<body>
+  <div class="card" role="main" aria-live="polite">
+    <div class="header">
+      <div>
+        <div class="title">Cloud Question (1–6)</div>
+        <div class="meta">This page requests a fresh server roll and displays the corresponding question.</div>
+      </div>
+      <div class="meta" id="smallTs"></div>
+    </div>
+
+    <div id="question" class="question">Loading…</div>
+    <div class="status" id="status">Requesting from server…</div>
+    <small id="hint">No caching: each scan fetches a fresh server-generated number. Two phones get different device IDs so they should receive different questions.</small>
+  </div>
+
+  <script>
+    // If server is on another origin, set this to full URL, else keep as '/roll'
+    const ROLL_ENDPOINT = '/roll';
+
+    const QUESTIONS = {
+      1: 'Explain the difference between IaaS, PaaS, and SaaS with one real-world example for each. (Topic: Cloud Service Models)',
+      2: 'Define Virtualization in the context of cloud computing. List two key benefits it provides to cloud infrastructure. (Topic: Core Enabling Technologies – Virtualization)',
+      3: 'Differentiate between Public Cloud and Private Cloud. When would an organization prefer a Hybrid Cloud model? (Topic: Cloud Deployment Models)',
+      4: 'Describe the role of networking in cloud computing. Why is software-defined networking (SDN) important in modern cloud environments? (Topic: Core Enabling Technologies – Networking Fundamentals)',
+      5: 'What are the four essential characteristics of cloud computing as defined by NIST? Briefly explain any two. (Topic: Cloud Computing – Essential Characteristics)',
+      6: 'Compare traditional on-premise storage with cloud-based storage. Also, mention one type of cloud database service and its use case. (Topic: Core Enabling Technologies – Storage & Database)'
+    };
+
+    function uuidv4(){
+      return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+      );
+    }
+
+    function getDeviceId(){
+      try{
+        const key = 'rnd_roll_device_id_v1';
+        let id = localStorage.getItem(key);
+        if(!id){ id = uuidv4(); localStorage.setItem(key,id); }
+        return id;
+      }catch(e){
+        if(!window.__tmp_device_id) window.__tmp_device_id = uuidv4();
+        return window.__tmp_device_id;
+      }
+    }
+
+    async function fetchRoll(){
+      const elStatus = document.getElementById('status');
+      const elQ = document.getElementById('question');
+      const elTs = document.getElementById('smallTs');
+      const deviceId = getDeviceId();
+      elStatus.textContent = 'Requesting number…';
+      elQ.textContent = 'Loading…';
+
+      try{
+        const url = new URL(ROLL_ENDPOINT, location.href);
+        url.searchParams.set('client_id', deviceId);
+
+        const resp = await fetch(url.toString(), {
+          method: 'GET',
+          cache: 'no-store',
+          headers: { 'Accept': 'application/json' }
+        });
+
+        if(!resp.ok) throw new Error('Server error: '+resp.status);
+        const data = await resp.json();
+        if(typeof data.number !== 'number') throw new Error('Invalid response');
+
+        const n = data.number;
+        const q = QUESTIONS[n] || 'Unknown question';
+        elQ.textContent = q;
+        elStatus.textContent = data.info ? (data.info + ' — id:' + deviceId.slice(0,6)) : '';
+        elTs.textContent = new Date((data.ts||Date.now())*1000).toLocaleString();
+        document.title = 'Q' + n;
+      }catch(err){
+        elStatus.textContent = 'Failed: ' + String(err);
+        elQ.textContent = 'Unable to load question. Please rescan or contact instructor.';
+      }
+    }
+
+    window.addEventListener('load', ()=>{ fetchRoll(); });
+  </script>
+</body>
+</html>
