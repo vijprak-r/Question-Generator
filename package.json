@@ -1,0 +1,20 @@
+{
+  "name": "cloud-question-roll",
+  "version": "1.0.0",
+  "description": "Server + static client to produce a server-generated roll (1-6) and show corresponding cloud questions",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "start:dev": "NODE_ENV=development node server.js"
+  },
+  "engines": {
+    "node": ">=14"
+  },
+  "keywords": ["express","roll","qr","cloud","questions"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  }
+}
